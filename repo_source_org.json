@@ -1,0 +1,29 @@
+[
+ {
+  "customer_name": "Exeter-Nonprod-Repo",
+  "account_id": "677276098971",
+  "deployment_instance_id": "i-0c1d632e8ac398175",
+  "deployment_ami_id": "ami-11111",
+  "batch_ami_id": "",
+  "client_ami_id": "",
+  "repo_dir": "Exeter-Nonprod-Repo",
+  "repo_url": "https://juliuswaynealoro@dev.azure.com/juliuswaynealoro/my-pipeline/_git/Exeter-Nonprod-Repo",
+  "version": "v1",
+  "target_file": "ami_refresh.tf",
+  "enabled": true
+ },
+ {
+  "customer_name": "Ual-Nonprod-Repo",
+  "account_id": "677276098971",
+  "deployment_instance_id": "i-0365ff387731cfd07",
+  "deployment_ami_id": "ami-22222",
+  "batch_ami_id": "",
+  "client_ami_id": "",
+  "repo_dir": "Ual-Nonprod-Repo",
+  "repo_url": "https://juliuswaynealoro@dev.azure.com/juliuswaynealoro/my-pipeline/_git/Ual-Nonprod-Repo",
+  "version": "v2",
+  "target_file": "main.tf",
+  "enabled": true
+ }
+]
+
