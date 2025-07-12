@@ -8,6 +8,10 @@ import os
 import stat
 import shutil
 import tempfile
+import datetime
+
+formatted_date = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 with open('masterfile.json') as f:
     masterfile = json.load(f)
@@ -100,6 +104,25 @@ def remove_readonly(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)  # remove read-only flag
     func(path)
 
+def git_checks_porcelain():
+    repo_dir = Path(base_folder, edited_folder, account['repo_name'])
+    result = subprocess.run(['git', '-C', str(repo_dir), 'status', '--porcelain'],
+    capture_output=True,
+    text=True
+    )
+    return result.stdout
+
+def change_validations():
+    repo_dir = Path(base_folder, edited_folder, account['repo_name'])
+    result = subprocess.run(['git', '-C', str(repo_dir), 'diff'],
+                    capture_output=True,
+                    text=True
+                    )
+    return result.stdout
+
+if base_folder.exists():
+        os.chmod(base_folder, stat.S_IWRITE)
+        shutil.rmtree(base_folder, onerror=remove_readonly)  # onerror = call remove_readonly function (Make it writable)
 
 for account in masterfile:
     if not ['enabled']:
@@ -109,16 +132,26 @@ for account in masterfile:
         session = authenticate_session(profile_name)
         get_lt()
         get_ami(session)
-        if base_folder.exists():
-            os.chmod(base_folder, stat.S_IWRITE)
-            shutil.rmtree(base_folder, onerror=remove_readonly)  # onerror = call remove_readonly function (Make it writable)
         clone_repo(account)
         backup()
 
         if account['version'] == 'v1':
             repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-            update_ami_v1(ami_id, repo_dir, account['target_file'])
+            update_ami_v1(ami_id, repo_dir, 'ami_refresh.tf')
         elif account['version'] == 'v2':
             repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-            update_ami_v1(ami_id, repo_dir, account['target_file'])
-        
+            update_ami_v2(ami_id, repo_dir, 'main.tf')
+
+        repo_dir = Path(base_folder, edited_folder, account['repo_name'])
+        if not git_checks_porcelain():
+            continue
+        else:
+            output = change_validations()
+            print(output)
+            logfile = Path(base_folder) / f'{formatted_date}-runlogs.txt'
+            with open (logfile, 'a') as f:
+                f.write('\n\n' + '=' * 60 + '\n')
+                f.write(f'• Repo Name : {account['repo_name']} \n')
+                f.write(f'• Changes Done :  \n')
+                f.write('=' * 60 + '\n\n')
+                f.write(output)

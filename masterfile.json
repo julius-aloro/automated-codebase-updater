@@ -5,7 +5,14 @@
   "repo_name": "Exeter-Nonprod-Repo",
   "repo_url": "https://juliuswaynealoro@dev.azure.com/juliuswaynealoro/my-pipeline/_git/Exeter-Nonprod-Repo",
   "version": "v1",
-  "target_file": "ami_refresh.tf",
+  "enabled": true
+ },
+ {
+  "profile_name": "julius.a",
+  "customer_name": "UAL NonProd",
+  "repo_name": "Ual-Nonprod-Repo",
+  "repo_url": "https://juliuswaynealoro@dev.azure.com/juliuswaynealoro/my-pipeline/_git/Ual-Nonprod-Repo",
+  "version": "v2",
   "enabled": true
  }
 ]
