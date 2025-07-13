@@ -34,14 +34,15 @@ def clone_repo(account):
     # ADD DELETE EXISTING FOLDERS HERE  <--------
 
     repository_url = account['repo_url']
-    success_message = '[CLONE SUCCESSFUL]'
     try:
         subprocess.run(["git", '-C', edited_folder , "clone", "--quiet", repository_url],
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
                         check=True) # Hide Output
 
-        print(f'{account['customer_name']} {success_message :>45}')
+        print('\n' + '=' * 60 + '\n')
+        print(f'• Cloned Repo : {account['customer_name']} \n')
+        print('=' * 60 + '\n')
 
     except subprocess.CalledProcessError as e:
         print(f"Failed to clone {account['customer_name']} repository. Please resolve manually: {e}")
@@ -114,18 +115,53 @@ def git_checks_porcelain():
 
 def change_validations():
     repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-    result = subprocess.run(['git', '-C', str(repo_dir), 'diff'],
+    result = subprocess.run(['git', '-C', repo_dir, 'diff'],
                     capture_output=True,
                     text=True
                     )
     return result.stdout
+
+def git_push():
+    try:
+        repo_dir = Path(base_folder, edited_folder, account['repo_name'])
+        commit_message = f"AMI Refresh Code Base Update (Py Script) - {formatted_date}"
+        
+        result = subprocess.run(
+        ['git', '-C', repo_dir, 'status', '--porcelain'],
+        capture_output=True,
+        text=True
+    )
+        if result.stdout.strip():
+            if account['version'] == 'v1':
+                subprocess.run(['git', '-C', repo_dir, 'add', 'ami_refresh.tf'])
+            elif account['version'] == 'v2':
+                subprocess.run(['git', '-C', repo_dir, 'add', 'main.tf'])
+            
+            subprocess.run(['git', '-C', repo_dir, 'commit', '-m', commit_message], 
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           check=True)
+            subprocess.run(['git', '-C', repo_dir, 'push'], 
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           check=True)
+            
+            print('\n' + '=' * 60 + '\n')
+            print(f'• Pushed to Repo : {account['customer_name']} \n')
+            print('=' * 60 + '\n')
+
+        else:
+            print(f'{account['customer_name'] + ':' :<45} --No Changes')
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to push {account['customer_name']} to remote repository. Please resolve first.: {e}")
+        exit (1)   # Make sure pipeline exits when a repo isn't pushed successfully
 
 if base_folder.exists():
         os.chmod(base_folder, stat.S_IWRITE)
         shutil.rmtree(base_folder, onerror=remove_readonly)  # onerror = call remove_readonly function (Make it writable)
 
 for account in masterfile:
-    if not ['enabled']:
+    if not account['enabled']:
         continue
     else:
         profile_name = account['profile_name']
@@ -143,12 +179,19 @@ for account in masterfile:
             update_ami_v2(ami_id, repo_dir, 'main.tf')
 
         repo_dir = Path(base_folder, edited_folder, account['repo_name'])
+        logfile = Path(base_folder) / f'{formatted_date}-runlogs.txt'
         if not git_checks_porcelain():
+            
+            with open (logfile, 'a') as f:
+                f.write('\n' + '=' * 60 + '\n')
+                f.write(f'• Repo Name : {account['repo_name']} \n')
+                f.write(f'• No Changes  \n')
+                f.write('=' * 60 + '\n')
             continue
         else:
             output = change_validations()
             print(output)
-            logfile = Path(base_folder) / f'{formatted_date}-runlogs.txt'
+            git_push()
             with open (logfile, 'a') as f:
                 f.write('\n\n' + '=' * 60 + '\n')
                 f.write(f'• Repo Name : {account['repo_name']} \n')
