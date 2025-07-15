@@ -1,6 +1,5 @@
 import json
 from auth import authenticate_session
-from get_info import get_asg
 from pathlib import Path
 import subprocess
 import re
@@ -9,6 +8,7 @@ import stat
 import shutil
 import tempfile
 import datetime
+from getpass import getpass
 
 formatted_date = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -22,31 +22,6 @@ edited_folder = Path(base_folder, 'edited')
 stutalk_lt = []
 evision_lt = []
 ami_id = ''
-
-########################### CLONING REPOSITORIES ##############################
-def clone_repo(account):
-    if not base_folder.exists():
-        base_folder.mkdir()
-    if not backup_folder.exists():
-        backup_folder.mkdir()
-    if not edited_folder.exists():
-        edited_folder.mkdir()
-    # ADD DELETE EXISTING FOLDERS HERE  <--------
-
-    repository_url = account['repo_url']
-    try:
-        subprocess.run(["git", '-C', edited_folder , "clone", "--quiet", repository_url],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        check=True) # Hide Output
-
-        print('\n' + '=' * 60 + '\n')
-        print(f'• Cloned Repo : {account['customer_name']} \n')
-        print('=' * 60 + '\n')
-
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to clone {account['customer_name']} repository. Please resolve manually: {e}")
-        exit (1)   # Make sure the script exits when a repo isn't cloned successfully
 
 ############################ GETTING ASG's ##############################
 def get_lt():
@@ -65,6 +40,35 @@ def get_ami(session):
     lt_ami = lt_version['LaunchTemplateVersions'][0]['LaunchTemplateData'].get('ImageId')
     global ami_id 
     ami_id = lt_ami
+
+########################### CLONING REPOSITORIES ##############################
+def clone_repo(account, username, password):
+    if not base_folder.exists():
+        base_folder.mkdir()
+    if not backup_folder.exists():
+        backup_folder.mkdir()
+    if not edited_folder.exists():
+        edited_folder.mkdir()
+
+    repository_url = f"https://{username}:{password}@{account['repo_url']}"
+    try:
+        subprocess.run(["git", '-C', edited_folder , "clone", "--quiet", repository_url],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        check=True) # Hide Output
+
+        print('\n' + '=' * 60 + '\n')
+        print(f'• Cloned Repo : {account['customer_name']} \n')
+        print('=' * 60 + '\n')
+
+        shutil.copytree(
+        Path(edited_folder, account['repo_name']),
+        Path(backup_folder, account['repo_name'])
+    )
+
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to clone {account['customer_name']} repository. Please resolve manually: {e}")
+        exit (1)   # Make sure the script exits when a repo isn't cloned successfully
 
 ########################## UPDATING AMI ID's #############################
 # Function for V1
@@ -94,12 +98,11 @@ def update_ami_v2(ami_id, repo_dir, target_file):
         file.write(final_content)
 
 
-def backup():
-    if os.path.exists(backup_folder):
-        shutil.copytree(
-            Path(edited_folder, account['repo_name']),
-            Path(backup_folder, account['repo_name'])
-        )
+# def backup(account):
+    # shutil.copytree(
+    #     Path(edited_folder, account['repo_name']),
+    #     Path(backup_folder, account['repo_name'])
+    # )
 
 def remove_readonly(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)  # remove read-only flag
@@ -160,6 +163,10 @@ if base_folder.exists():
         os.chmod(base_folder, stat.S_IWRITE)
         shutil.rmtree(base_folder, onerror=remove_readonly)  # onerror = call remove_readonly function (Make it writable)
 
+
+ado_username = input('Enter ADO username: ')
+ado_password = getpass('Enter ADO password: ')
+ 
 for account in masterfile:
     if not account['enabled']:
         continue
@@ -168,8 +175,10 @@ for account in masterfile:
         session = authenticate_session(profile_name)
         get_lt()
         get_ami(session)
-        clone_repo(account)
-        backup()
+        clone_repo(account, ado_username, ado_password)
+        print(f'{"Evision Launch Template:":25} {evision_lt[0]}')
+        print(f'{"Stutalk Launch Template:":25} {stutalk_lt[0]}')
+        print(f'{"AMI ID Used:":25} {ami_id}')
 
         if account['version'] == 'v1':
             repo_dir = Path(base_folder, edited_folder, account['repo_name'])
@@ -198,3 +207,7 @@ for account in masterfile:
                 f.write(f'• Changes Done :  \n')
                 f.write('=' * 60 + '\n\n')
                 f.write(output)
+
+        # Clear the lists for another round of Account
+        stutalk_lt.clear()
+        evision_lt.clear()

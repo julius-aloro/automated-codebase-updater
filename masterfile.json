@@ -1,18 +1,18 @@
 [
  {
-  "profile_name": "julius.a",
+  "profile_name": "Exeter-NonProd",
   "customer_name": "Exeter NonProd",
   "repo_name": "Exeter-Nonprod-Repo",
-  "repo_url": "https://juliuswaynealoro@dev.azure.com/juliuswaynealoro/my-pipeline/_git/Exeter-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Exeter-Nonprod-Repo",
   "version": "v1",
   "enabled": true
  },
  {
-  "profile_name": "julius.a",
-  "customer_name": "UAL NonProd",
-  "repo_name": "Ual-Nonprod-Repo",
-  "repo_url": "https://juliuswaynealoro@dev.azure.com/juliuswaynealoro/my-pipeline/_git/Ual-Nonprod-Repo",
-  "version": "v2",
+  "profile_name": "PLYM-NonProd",
+  "customer_name": "Plymouth NonProd",
+  "repo_name": "Plym-Prod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Plym-Prod-Repo",
+  "version": "v1",
   "enabled": true
  }
 ]
