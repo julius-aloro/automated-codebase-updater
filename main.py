@@ -98,12 +98,6 @@ def update_ami_v2(ami_id, repo_dir, target_file):
         file.write(final_content)
 
 
-# def backup(account):
-    # shutil.copytree(
-    #     Path(edited_folder, account['repo_name']),
-    #     Path(backup_folder, account['repo_name'])
-    # )
-
 def remove_readonly(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)  # remove read-only flag
     func(path)
