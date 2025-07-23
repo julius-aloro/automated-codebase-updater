@@ -19,6 +19,8 @@ with open('masterfile.json') as f:
 base_folder = Path(tempfile.gettempdir()) / 'automated-codebase-updater'
 backup_folder = Path(base_folder, 'backup')
 edited_folder = Path(base_folder, 'edited')
+v1_filename = 'ami_refresh.tf'
+v2_filename = 'main.tf'
 stutalk_lt = []
 evision_lt = []
 ami_id = ''
@@ -108,7 +110,7 @@ def git_checks_porcelain():
     capture_output=True,
     text=True
     )
-    return result.stdout
+    return bool(result.stdout.strip())
 
 def change_validations():
     repo_dir = Path(base_folder, edited_folder, account['repo_name'])
@@ -130,9 +132,9 @@ def git_push():
     )
         if result.stdout.strip():
             if account['version'] == 'v1':
-                subprocess.run(['git', '-C', repo_dir, 'add', 'ami_refresh.tf'])
+                subprocess.run(['git', '-C', repo_dir, 'add', v1_filename])
             elif account['version'] == 'v2':
-                subprocess.run(['git', '-C', repo_dir, 'add', 'main.tf'])
+                subprocess.run(['git', '-C', repo_dir, 'add', v2_filename])
             
             subprocess.run(['git', '-C', repo_dir, 'commit', '-m', commit_message], 
                            stdout=subprocess.DEVNULL,
@@ -176,32 +178,32 @@ for account in masterfile:
 
         if account['version'] == 'v1':
             repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-            update_ami_v1(ami_id, repo_dir, 'ami_refresh.tf')
+            update_ami_v1(ami_id, repo_dir, v1_filename)
         elif account['version'] == 'v2':
             repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-            update_ami_v2(ami_id, repo_dir, 'main.tf')
+            update_ami_v2(ami_id, repo_dir, v2_filename)
 
         repo_dir = Path(base_folder, edited_folder, account['repo_name'])
         logfile = Path(base_folder) / f'{formatted_date}-runlogs.txt'
-        if not git_checks_porcelain():
-            
-            with open (logfile, 'a') as f:
-                f.write('\n' + '=' * 60 + '\n')
-                f.write(f'• Repo Name : {account['repo_name']} \n')
-                f.write(f'• No Changes  \n')
-                f.write('=' * 60 + '\n')
-            continue
-        else:
+        if git_checks_porcelain():
+            # print("There are no changes. Please see logfile.")
+            # with open (logfile, 'a') as f:
+            #     f.write('\n' + '=' * 60 + '\n')
+            #     f.write(f'• Repo Name : {account['repo_name']} \n')
+            #     f.write(f'• No Changes  \n')
+            #     f.write('=' * 60 + '\n')
+            # continue
+        # else:
             output = change_validations()
             print(output)
-            git_push()
-            with open (logfile, 'a') as f:
-                f.write('\n\n' + '=' * 60 + '\n')
-                f.write(f'• Repo Name : {account['repo_name']} \n')
-                f.write(f'• Changes Done :  \n')
-                f.write('=' * 60 + '\n\n')
-                f.write(output)
+        #     git_push()
+        #     with open (logfile, 'a') as f:
+        #         f.write('\n\n' + '=' * 60 + '\n')
+        #         f.write(f'• Repo Name : {account['repo_name']} \n')
+        #         f.write(f'• Changes Done :  \n')
+        #         f.write('=' * 60 + '\n\n')
+        #         f.write(output)
 
-        # Clear the lists for another round of Account
+        # # Clear the lists for another round of Account
         stutalk_lt.clear()
         evision_lt.clear()

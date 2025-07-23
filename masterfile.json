@@ -13,6 +13,6 @@
   "repo_name": "Plym-Prod-Repo",
   "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Plym-Prod-Repo",
   "version": "v1",
-  "enabled": true
+  "enabled": false
  }
 ]
