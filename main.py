@@ -24,10 +24,11 @@ v2_filename = 'main.tf'
 stutalk_lt = []
 evision_lt = []
 ami_id = ''
+ami_id_from_cloned_file = ''
 
 ############################ GETTING ASG's ##############################
-def get_lt():
-    auto_scaling = session.client('autoscaling').describe_auto_scaling_groups()
+def get_lt(account):
+    auto_scaling = account.client('autoscaling').describe_auto_scaling_groups()
     for asg in auto_scaling['AutoScalingGroups']:
         if 'stutalk' in asg['LaunchTemplate']['LaunchTemplateName'].lower():
             stutalk_lt.append(asg['LaunchTemplate']['LaunchTemplateId'])
@@ -35,8 +36,8 @@ def get_lt():
             evision_lt.append((asg['LaunchTemplate']['LaunchTemplateId']))
 
 ########################## GETTING AMI ID's ##############################
-def get_ami(session):
-    lt_version = session.client('ec2').describe_launch_template_versions(
+def get_ami(account):
+    lt_version = account.client('ec2').describe_launch_template_versions(
         LaunchTemplateId=stutalk_lt[0], Versions=['$Latest',])
     
     lt_ami = lt_version['LaunchTemplateVersions'][0]['LaunchTemplateData'].get('ImageId')
@@ -72,33 +73,51 @@ def clone_repo(account, username, password):
         print(f"Failed to clone {account['customer_name']} repository. Please resolve manually: {e}")
         exit (1)   # Make sure the script exits when a repo isn't cloned successfully
 
+################## EXTRACTING AMI ID's CLONED FILE #########################
+
+def extract_v1_ami(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+    pattern = r'(\s*default\s*=\s*)(")(ami-)([a-zA-Z0-9]*)(")'
+    match = re.search(pattern, content)
+    if match:
+        return match.group(3) + match.group(4)
+    
+def extract_v2_ami(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+    pattern = r'(\s*evision_image_id\s*=\s*)(")(ami-)([a-zA-Z0-9]*)(")'
+    match = re.search(pattern, content)
+    if match:
+        return match.group(3) + match.group(4)
+
 ########################## UPDATING AMI ID's #############################
 # Function for V1
-def update_ami_v1(ami_id, repo_dir, target_file):
-    with open(Path(edited_folder, repo_dir, target_file), 'r') as file:
+def update_ami_v1(file_path, ami):
+    with open(file_path, 'r') as file:
         content = file.read()
-        
-    pattern = r'(\s*default\s*=\s*")(ami-[^"]+)(")'
-    replace = r'\1' + ami_id + r'\3'
-    new_content = re.sub(pattern, replace, content)
 
-    with open(Path(edited_folder, repo_dir, target_file), 'w') as file:
-        file.write(new_content)
+    pattern = r'(\s*)(default)(\s*)(=)(\s*)(")([a-zA-Z-0-9]*)(")'
+    replacement = rf'\1\2\3\4\5\6{ami}\8' 
+    replaced_text = re.sub(pattern, replacement, content)
+        
+    with open(file_path, 'w') as file:
+        file.write(replaced_text)
 
 #Function for V2
-def update_ami_v2(ami_id, repo_dir, target_file):
-    with open(Path(edited_folder, repo_dir, target_file), 'r') as file:
+def update_ami_v2(file_path, ami):
+    with open(file_path, 'r') as file:
         content = file.read()
-        
-    pattern1 = r'(evision_image_id\s*=\s*")(ami-[^"]+)(")' # [^"] = Match anything except whats inside the brackets
-    pattern2 = r'(stutalk_image_id\s*=\s*")(ami-[^"]+)(")'
-    replace = r'\1' + ami_id + r'\3'
-    content2 = re.sub(pattern1, replace, content)
-    final_content = re.sub(pattern2, replace, content2)
 
-    with open(Path(edited_folder, repo_dir, target_file), 'w') as file:
+    evision_pattern = r'(\s*)(evision_image_id)(\s*)(=)(\s*)(")([a-zA-Z-0-9]*)(")'
+    stutalk_pattern = r'(\s*)(stutalk_image_id)(\s*)(=)(\s*)(")([a-zA-Z-0-9]*)(")'
+    evision_replacement = rf'\1\2\3\4\5\6{ami}\8'
+    stutalk_replacement = rf'\1\2\3\4\5\6{ami}\8'
+    final_content = re.sub(evision_pattern, evision_replacement, content)
+    final_content = re.sub(stutalk_pattern, stutalk_replacement, final_content)
+
+    with open(file_path, 'w') as file:
         file.write(final_content)
-
 
 def remove_readonly(func, path, exc_info):
     os.chmod(path, stat.S_IWRITE)  # remove read-only flag
@@ -110,50 +129,57 @@ def git_checks_porcelain():
     capture_output=True,
     text=True
     )
+    print(result.stdout)
     return bool(result.stdout.strip())
-
-def change_validations():
-    repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-    result = subprocess.run(['git', '-C', repo_dir, 'diff'],
+    
+def change_validations(file_path):
+    result = subprocess.run(['git', '-C', file_path, 'diff'],
                     capture_output=True,
                     text=True
                     )
     return result.stdout
 
-def git_push():
-    try:
-        repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-        commit_message = f"AMI Refresh Code Base Update (Py Script) - {formatted_date}"
+# def git_push(file_path, account, username, password):
+#     repository_url = f"https://{username}:{password}@{account['repo_url']}"
+#     try:
+#         file_path = Path(base_folder, edited_folder, account['repo_name'])
+#         commit_message = f"AMI Refresh Code Base Update - {formatted_date}"
         
-        result = subprocess.run(
-        ['git', '-C', repo_dir, 'status', '--porcelain'],
-        capture_output=True,
-        text=True
-    )
-        if result.stdout.strip():
-            if account['version'] == 'v1':
-                subprocess.run(['git', '-C', repo_dir, 'add', v1_filename])
-            elif account['version'] == 'v2':
-                subprocess.run(['git', '-C', repo_dir, 'add', v2_filename])
+#         result = subprocess.run(
+#         ['git', '-C', file_path, 'status', '--porcelain'],
+#         capture_output=True,
+#         text=True
+#     )
+#         if result.stdout.strip():
+#             if account['version'] == 'v1':
+#                 subprocess.run(['git', '-C', file_path, 'add', v1_filename])
+#             elif account['version'] == 'v2':
+#                 subprocess.run(['git', '-C', file_path, 'add', v2_filename])
             
-            subprocess.run(['git', '-C', repo_dir, 'commit', '-m', commit_message], 
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL,
-                           check=True)
-            subprocess.run(['git', '-C', repo_dir, 'push'], 
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL,
-                           check=True)
+#             subprocess.run(['git', '-C', file_path, 'commit', '-m', commit_message], 
+#                            stdout=subprocess.DEVNULL,
+#                            stderr=subprocess.DEVNULL,
+#                            check=True)
+#             subprocess.run(['git', '-C', file_path, 'push'], 
+#                            stdout=subprocess.DEVNULL,
+#                            stderr=subprocess.DEVNULL,
+#                            check=True)
             
-            print('\n' + '=' * 60 + '\n')
-            print(f'• Pushed to Repo : {account['customer_name']} \n')
-            print('=' * 60 + '\n')
+#             print('\n' + '=' * 60 + '\n')
+#             print(f'• Pushed to Repo : {account['customer_name']} \n')
+#             print('=' * 60 + '\n')
 
-        else:
-            print(f'{account['customer_name'] + ':' :<45} --No Changes')
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to push {account['customer_name']} to remote repository. Please resolve first.: {e}")
-        exit (1)   # Make sure pipeline exits when a repo isn't pushed successfully
+#         # else:
+#         #     print(f'{account['customer_name'] + ':' :<45} --No Changes')
+#     except subprocess.CalledProcessError as e:
+#         print(f"Failed to push {account['customer_name']} to remote repository. Please resolve first.: {e}")
+#         exit (1)   # Make sure pipeline exits when a repo isn't pushed successfully
+
+def clear_variables(var1, var2, var3, var4):
+    var1.clear()
+    var2.clear()
+    var3 = ''
+    var4 = ''
 
 if base_folder.exists():
         os.chmod(base_folder, stat.S_IWRITE)
@@ -169,41 +195,50 @@ for account in masterfile:
     else:
         profile_name = account['profile_name']
         session = authenticate_session(profile_name)
-        get_lt()
+        get_lt(session)
         get_ami(session)
         clone_repo(account, ado_username, ado_password)
-        print(f'{"Evision Launch Template:":25} {evision_lt[0]}')
-        print(f'{"Stutalk Launch Template:":25} {stutalk_lt[0]}')
-        print(f'{"AMI ID Used:":25} {ami_id}')
-
-        if account['version'] == 'v1':
-            repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-            update_ami_v1(ami_id, repo_dir, v1_filename)
-        elif account['version'] == 'v2':
-            repo_dir = Path(base_folder, edited_folder, account['repo_name'])
-            update_ami_v2(ami_id, repo_dir, v2_filename)
+        print(f'{"Evision Launch Template:":35} {evision_lt[0]}')
+        print(f'{"Stutalk Launch Template:":35} {stutalk_lt[0]}')
+        print(f'{"AMI ID Used:":35} {ami_id}')
 
         repo_dir = Path(base_folder, edited_folder, account['repo_name'])
         logfile = Path(base_folder) / f'{formatted_date}-runlogs.txt'
-        if git_checks_porcelain():
-            # print("There are no changes. Please see logfile.")
-            # with open (logfile, 'a') as f:
-            #     f.write('\n' + '=' * 60 + '\n')
-            #     f.write(f'• Repo Name : {account['repo_name']} \n')
-            #     f.write(f'• No Changes  \n')
-            #     f.write('=' * 60 + '\n')
-            # continue
-        # else:
-            output = change_validations()
-            print(output)
-        #     git_push()
-        #     with open (logfile, 'a') as f:
-        #         f.write('\n\n' + '=' * 60 + '\n')
-        #         f.write(f'• Repo Name : {account['repo_name']} \n')
-        #         f.write(f'• Changes Done :  \n')
-        #         f.write('=' * 60 + '\n\n')
-        #         f.write(output)
 
-        # # Clear the lists for another round of Account
-        stutalk_lt.clear()
-        evision_lt.clear()
+        if account['version'] == 'v1':
+            ami_id_from_cloned_file = extract_v1_ami(Path(repo_dir,v1_filename))
+        elif account['version'] == 'v2':
+            ami_id_from_cloned_file = extract_v2_ami(Path(repo_dir,v2_filename))
+
+        print(f'{"Current AMI ID in codebase:":35} {ami_id_from_cloned_file}')
+
+        if ami_id != ami_id_from_cloned_file:
+            if account['version'] == 'v1':
+                update_ami_v1(Path(repo_dir, v1_filename), ami_id)
+                output = change_validations(repo_dir)
+                print('\n')
+                print(output)
+            elif account['version'] == 'v2':
+                # git_push(repo_dir, account, ado_username, ado_password)
+                update_ami_v1(Path(repo_dir, v2_filename), ami_id)
+            
+            with open (logfile, 'a') as f:
+                f.write('\n\n' + '=' * 60 + '\n')
+                f.write(f'• Repo Name : {account['repo_name']} \n')
+                f.write(f'• Changes Done :  \n')
+                f.write('=' * 60 + '\n\n')
+                f.write(output)
+                    
+                # Clear the lists for another round of Account
+                clear_variables(stutalk_lt, evision_lt, ami_id, ami_id_from_cloned_file)
+        else:
+            print("There are no changes. Please see logfile.")
+            with open (logfile, 'a') as f:
+                f.write('\n' + '=' * 60 + '\n')
+                f.write(f'• Repo Name : {account['repo_name']} \n')
+                f.write(f'• No Changes  \n')
+                f.write('=' * 60 + '\n')
+            # Clear the lists for another round of Account
+            clear_variables(stutalk_lt, evision_lt, ami_id, ami_id_from_cloned_file)
+            continue
+            
