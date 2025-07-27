@@ -1,5 +1,61 @@
 [
  {
+  "profile_name": "Bcu-NonProd",
+  "customer_name": "BCU NonProd",
+  "repo_name": "Bcu-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Bcu-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "Port-NonProd",
+  "customer_name": "Ports NonProd",
+  "repo_name": "Port-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Port-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "MITS-Essential",
+  "customer_name": "ITS Malta",
+  "repo_name": "Mits-Essential-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Mits-Essential-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "Sund-NonProd",
+  "customer_name": "Sunderland NonProd",
+  "repo_name": "Sund-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Sund-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "PLYM-NonProd",
+  "customer_name": "Plymouth NonProd",
+  "repo_name": "Plym-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Plym-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "RDG-NonProd",
+  "customer_name": "Reading NonProd",
+  "repo_name": "Rdg-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Rdg-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "UEA-NonProd",
+  "customer_name": "UEA NonProd",
+  "repo_name": "Uea-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Uea-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
   "profile_name": "Exeter-NonProd",
   "customer_name": "Exeter NonProd",
   "repo_name": "Exeter-Nonprod-Repo",
@@ -8,12 +64,35 @@
   "enabled": true
  },
  {
-  "profile_name": "PLYM-NonProd",
-  "customer_name": "Plymouth NonProd",
-  "repo_name": "Plym-Prod-Repo",
-  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Plym-Prod-Repo",
+  "profile_name": "Gcu-NonProd-TF",
+  "customer_name": "GCU NonProd",
+  "repo_name": "Gcu-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Gcu-Nonprod-Repo",
+  "version": "v2",
+  "enabled": true
+ },
+ {
+  "profile_name": "RVC-NonProd",
+  "customer_name": "RVC NonProd",
+  "repo_name": "Rvc-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Rvc-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "UCA-NonProd",
+  "customer_name": "UCA NonProd",
+  "repo_name": "Uca-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Uca-Nonprod-Repo",
+  "version": "v1",
+  "enabled": true
+ },
+ {
+  "profile_name": "BUV-NonProd",
+  "customer_name": "BUV NonProd",
+  "repo_name": "Buv-Nonprod-Repo",
+  "repo_url": "dev.azure.com/tribalgroup/Platform%20Engineering-SITS-EBS-Maytas-K2/_git/Buv-Nonprod-Repo",
   "version": "v1",
   "enabled": true
  }
- 
 ]
