@@ -28,13 +28,16 @@ ami_id = ''                     # AMI ID inside used by account
 ami_id_from_cloned_file = ''    # AMI ID extracted from file
 
 ############################ GETTING ASG's ##############################
-def get_lt(account):
-    auto_scaling = account.client('autoscaling').describe_auto_scaling_groups()
-    for asg in auto_scaling['AutoScalingGroups']:
-        if 'stutalk' in asg['LaunchTemplate']['LaunchTemplateName'].lower():
-            stutalk_lt.append(asg['LaunchTemplate']['LaunchTemplateId'])
-        elif 'evision' in asg['LaunchTemplate']['LaunchTemplateName'].lower():
-            evision_lt.append((asg['LaunchTemplate']['LaunchTemplateId']))
+def get_lt(account, environment):
+    response = account.client('autoscaling').describe_auto_scaling_groups()
+
+    for asg in response['AutoScalingGroups']:
+        for tag in asg['Tags']:
+            if tag['Key'].lower() == 'environment' and tag['Value'].lower() == environment.lower():
+                if 'stutalk' in asg['LaunchTemplate'].get('LaunchTemplateName').lower():
+                    stutalk_lt.append(asg['LaunchTemplate']['LaunchTemplateId'])
+                elif 'evision' in asg['LaunchTemplate'].get('LaunchTemplateName').lower():
+                    evision_lt.append(asg['LaunchTemplate']['LaunchTemplateId'])
 
 ########################## GETTING AMI ID's ##############################
 def get_ami(account):
@@ -178,14 +181,14 @@ if base_folder.exists():
 
 ado_username = input('Enter ADO username: ')
 ado_password = getpass('Enter ADO password: ')
- 
+
 for account in masterfile:
     if not account['enabled']:
         continue
     else:
         profile_name = account['profile_name']
         session = authenticate_session(profile_name)
-        get_lt(session)
+        get_lt(session,account['env'])
         get_ami(session)
         clone_repo(account, ado_username, ado_password)
         if evision_lt:
@@ -209,8 +212,6 @@ for account in masterfile:
         print(f'{"Current AMI ID in codebase:":35} {ami_id_from_cloned_file}')
 
         if ami_id != ami_id_from_cloned_file:
-            
-
             if account['version'] == 'v1':
                 update_ami_v1(Path(repo_dir, v1_filename), ami_id)
                 output = change_validations(repo_dir)
@@ -221,7 +222,7 @@ for account in masterfile:
                     f.write(f'• Changes Done :  \n')
                     f.write('=' * 60 + '\n\n')
                     f.write(output)
-                git_push(ado_username, ado_password, 'v1', account['repo_name'])
+                # git_push(ado_username, ado_password, 'v1', account['repo_name'])
                 
             elif account['version'] == 'v2':
                 update_ami_v2(Path(repo_dir, v2_filename), ami_id)
@@ -233,7 +234,7 @@ for account in masterfile:
                     f.write(f'• Changes Done :  \n')
                     f.write('=' * 60 + '\n\n')
                     f.write(output)
-                git_push(ado_username, ado_password, 'v2', account['repo_name'])
+                # git_push(ado_username, ado_password, 'v2', account['repo_name'])
                     
                 
         else:
@@ -246,6 +247,6 @@ for account in masterfile:
             # Clear the lists for another round of Account
             clear_variables(stutalk_lt, evision_lt, ami_id, ami_id_from_cloned_file)
             continue
-    # Clear the lists for another round of Account
+    # # Clear the lists for another round of Account
     clear_variables(stutalk_lt, evision_lt, ami_id, ami_id_from_cloned_file)
             
